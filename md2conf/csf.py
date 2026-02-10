@@ -148,7 +148,7 @@ def elements_to_string(root: ElementType) -> str:
     """
 
     xml = ET.tostring(root, encoding="utf8", method="xml").decode("utf8")
-    m = re.match(r"^<root\s+[^>]*>(.*)</root>\s*$", xml, re.DOTALL)
+    m = re.match(r"^<root(?:\s[^>]*)?>(.*)</root>\s*$", xml, re.DOTALL)
     if m:
         return m.group(1)
     else:

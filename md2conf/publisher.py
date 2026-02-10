@@ -6,16 +6,21 @@ Copyright 2022-2026, Levente Hunyadi
 :see: https://github.com/hunyadi/md2conf
 """
 
+import copy
 import logging
 from pathlib import Path
 
+import lxml.etree as ET
+
 from .api import ConfluenceContentProperty, ConfluenceLabel, ConfluenceSession, ConfluenceStatus
 from .attachment import attachment_name
+from .comments import extract_comment_markers, restore_comment_markers
 from .compatibility import override, path_relative_to
 from .converter import ConfluenceDocument, get_volatile_attributes, get_volatile_elements
 from .csf import AC_ATTR, elements_from_string
 from .environment import PageError
 from .metadata import ConfluencePageMetadata
+from .merge import MD2CONF_LAST_GENERATED_KEY, merge_content
 from .options import ConfluencePageID, DocumentOptions
 from .processor import Converter, DocumentNode, Processor, ProcessorFactory
 from .xml import is_xml_equal, unwrap_substitute
@@ -177,6 +182,65 @@ class SynchronizingProcessor(Processor):
         for child_node in node.children():
             self._synchronize_subtree(child_node, ConfluencePageID(page.id), catalog)
 
+    def _retrieve_previous_generated_content(
+        self, page_id: str, properties_dict: dict[str, any]
+    ) -> ElementType | None:
+        """
+        Retrieves and parses the previous generated content from page properties.
+
+        :param page_id: The Confluence page ID.
+        :param properties_dict: Dictionary of page properties keyed by property key.
+        :returns: The parsed previous generated content tree, or None if not found.
+        """
+        if MD2CONF_LAST_GENERATED_KEY not in properties_dict:
+            return None
+
+        try:
+            prop = properties_dict[MD2CONF_LAST_GENERATED_KEY]
+            previous_content = prop.value if isinstance(prop.value, str) else str(prop.value)
+            previous_generated_tree = elements_from_string(previous_content)
+            # Discard comments from previous content
+            unwrap_substitute(AC_ATTR("inline-comment-marker"), previous_generated_tree)
+            LOGGER.debug("Retrieved previous generated content from page properties")
+            return previous_generated_tree
+        except Exception as e:
+            LOGGER.debug("Could not parse previous generated content: %s", e)
+            return None
+
+    def _store_generated_content(
+        self, page_id: str, new_tree: ElementType, properties_dict: dict[str, any]
+    ) -> None:
+        """
+        Stores the new generated content (without comments) in page properties for future merges.
+
+        :param page_id: The Confluence page ID.
+        :param new_tree: The new generated content tree.
+        :param properties_dict: Dictionary of page properties keyed by property key.
+        """
+        try:
+            # Create a copy without comments
+            new_tree_copy = copy.deepcopy(new_tree)
+            unwrap_substitute(AC_ATTR("inline-comment-marker"), new_tree_copy)
+            new_content_str = ET.tostring(new_tree_copy, encoding="unicode", method="xml")
+
+            # Update or create the property
+            if MD2CONF_LAST_GENERATED_KEY in properties_dict:
+                old_prop = properties_dict[MD2CONF_LAST_GENERATED_KEY]
+                self.api.update_content_property_for_page(
+                    page_id,
+                    old_prop.id,
+                    old_prop.version.number + 1,
+                    ConfluenceContentProperty(MD2CONF_LAST_GENERATED_KEY, new_content_str),
+                )
+            else:
+                self.api.add_content_property_to_page(
+                    page_id,
+                    ConfluenceContentProperty(MD2CONF_LAST_GENERATED_KEY, new_content_str),
+                )
+            LOGGER.debug("Stored new generated content in page properties for future merges")
+        except Exception as e:
+            LOGGER.warning("Could not store generated content in page properties: %s", e)
+
     @override
     def _update_page(self, page_id: ConfluencePageID, document: ConfluenceDocument, path: Path) -> None:
         """
@@ -202,9 +266,6 @@ class SynchronizingProcessor(Processor):
                 comment=file_data.description,
             )
 
-        content = document.xhtml()
-        LOGGER.debug("Generated Confluence Storage Format document:\n%s", content)
-
         title = self._get_unique_title(document, path)
 
         # fetch existing page
@@ -212,18 +273,74 @@ class SynchronizingProcessor(Processor):
         if not title:  # empty or `None`
             title = page.title
 
-        # discard comments
-        tree = elements_from_string(page.content)
-        unwrap_substitute(AC_ATTR("inline-comment-marker"), tree)
+        # Extract comment markers with full context BEFORE stripping
+        existing_tree = elements_from_string(page.content)
+        comment_markers = extract_comment_markers(AC_ATTR("inline-comment-marker"), existing_tree)
+
+        # discard comments for comparison
+        unwrap_substitute(AC_ATTR("inline-comment-marker"), existing_tree)
+
+        # Retrieve page properties (used for both previous content and storing new content)
+        properties_dict: dict[str, any] = {}
+        try:
+            properties = self.api.get_content_properties_for_page(page_id.page_id)
+            properties_dict = {p.key: p for p in properties}
+        except Exception as e:
+            LOGGER.debug("Could not retrieve page properties: %s", e)
+
+        # Retrieve previous generated content for 3-way merge
+        previous_generated_tree = self._retrieve_previous_generated_content(page_id.page_id, properties_dict)
+
+        # Perform 3-way merge to preserve manual edits
+        new_tree = document.root
+        merged_tree = merge_content(previous_generated_tree, existing_tree, new_tree)
 
         # check if page has any changes
         if page.title != title or not is_xml_equal(
-            document.root,
-            tree,
+            merged_tree,
+            existing_tree,
             skip_attributes=get_volatile_attributes(),
             skip_elements=get_volatile_elements(),
         ):
+            # Restore comments in the merged document using multi-pass strategy
+            if comment_markers:
+                restored, unrestored = restore_comment_markers(
+                    AC_ATTR("inline-comment-marker"),
+                    merged_tree,
+                    comment_markers,
+                )
+
+                if unrestored:
+                    LOGGER.warning(
+                        "Could not restore %d of %d comments for page %s: %s",
+                        len(unrestored),
+                        len(comment_markers),
+                        page_id.page_id,
+                        [m.ref for m in unrestored],
+                    )
+                elif comment_markers:
+                    LOGGER.info(
+                        "Restored %d inline comments for page %s",
+                        restored,
+                        page_id.page_id,
+                    )
+
+            # Update the document root with merged content
+            if merged_tree is not document.root:
+                document.root.clear()
+                document.root.tag = merged_tree.tag
+                document.root.attrib.update(merged_tree.attrib)
+                document.root.text = merged_tree.text
+                document.root.tail = merged_tree.tail
+                for child in merged_tree:
+                    document.root.append(child)
+
+            content = document.xhtml()
+            LOGGER.debug("Generated Confluence Storage Format document:\n%s", content)
             self.api.update_page(page_id.page_id, content, title=title, version=page.version.number + 1)
+
+            # Store the new generated content (without comments) for next merge
+            self._store_generated_content(page_id.page_id, new_tree, properties_dict)
         else:
             LOGGER.info("Up-to-date page: %s", page_id.page_id)
 

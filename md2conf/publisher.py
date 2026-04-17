@@ -366,7 +366,7 @@ class SynchronizingProcessor(Processor):
 
             content = document.xhtml()
             LOGGER.debug("Generated Confluence Storage Format document:\n%s", content)
-            self.api.update_page(page_id.page_id, content, title=title, version=page.version.number + 1)
+            self.api.update_page(page_id.page_id, content, title=title, version=page.version.number + 1, message="Updated by md2conf")
 
             # Store the new generated content (without comments) for next merge
             self._store_generated_content(page_id.page_id, new_tree, properties_dict)

@@ -82,16 +82,11 @@ class ImageAttributes:
             case FormattingContext.BLOCK:
                 match self.alignment:
                     case ImageAlignment.LEFT:
-                        align = "left"
-                        layout = "align-start"
+                        attributes[AC_ATTR("align")] = "left"
                     case ImageAlignment.RIGHT:
-                        align = "right"
-                        layout = "align-end"
+                        attributes[AC_ATTR("align")] = "right"
                     case ImageAlignment.CENTER:
-                        align = "center"
-                        layout = "center"
-                attributes[AC_ATTR("align")] = align
-                attributes[AC_ATTR("layout")] = layout
+                        pass
 
                 if self.width is not None:
                     attributes[AC_ATTR("original-width")] = str(self.width)

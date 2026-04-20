@@ -357,7 +357,13 @@ Displaying math formulas in Confluence (without pre-rendering) requires the exte
 
 You can configure diagram and image alignment using the JSON/YAML front-matter attribute `alignment` or the command-line argument of the same name. Possible values are `center` (default), `left` and `right`. The value configured in the Markdown file front-matter takes precedence.
 
+For Confluence Cloud, images wider than 800 pixels automatically use `full-width` layout to fit the page content area, regardless of the alignment setting.
+
 Unfortunately, not every third-party app supports every alignment variant. For example, the draw\.io marketplace app supports left and center but not right alignment; and diagrams produced by the Mermaid marketplace app are always centered, ignoring the setting for alignment.
+
+### Linked images
+
+Markdown images wrapped in links (`[![alt](image.png)](url)`) are rendered as clickable images in Confluence. These linked images are treated as block-level elements and receive alignment attributes. A visible border is automatically added to linked images to indicate they are clickable.
 
 ### Confluence widgets
 

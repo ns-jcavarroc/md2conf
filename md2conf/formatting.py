@@ -7,6 +7,7 @@ Copyright 2022-2026, Levente Hunyadi
 """
 
 import enum
+import uuid
 from dataclasses import dataclass
 from typing import ClassVar
 
@@ -92,6 +93,7 @@ class ImageAttributes:
                         layout = "center"
                 attributes[AC_ATTR("align")] = align
                 attributes[AC_ATTR("layout")] = layout
+                attributes[AC_ATTR("local-id")] = str(uuid.uuid4())
 
                 if self.width is not None:
                     attributes[AC_ATTR("original-width")] = str(self.width)

@@ -13,7 +13,7 @@ from typing import ClassVar
 
 from .csf import AC_ATTR
 
-_PAGE_CONTENT_WIDTH = 760
+_PAGE_CONTENT_WIDTH = 800
 
 
 @enum.unique

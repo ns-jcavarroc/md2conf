@@ -1470,10 +1470,7 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
                     and not child[0][0].tail
                 ):
                     img = child[0][0]
-                    image = self._transform_image(FormattingContext.BLOCK, img)
-                    child[0][0] = image
-                    link = self._transform_link(child[0])
-                    return link if link is not None else child[0]
+                    return self._transform_image(FormattingContext.BLOCK, img)
 
                 # <p>[[<em>TOC</em>]]</p> (represented in Markdown as `[[_TOC_]]`)
                 elif is_placeholder_for(child, "TOC"):

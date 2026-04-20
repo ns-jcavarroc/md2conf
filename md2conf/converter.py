@@ -1473,7 +1473,10 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
                     image = self._transform_image(FormattingContext.BLOCK, img)
                     child[0][0] = image
                     link = self._transform_link(child[0])
-                    return link if link is not None else child[0]
+                    result = link if link is not None else child[0]
+                    alignment = self.options.layout.get_image_alignment()
+                    style = {"left": "left", "right": "right", "center": "center"}.get(alignment, "center")
+                    return HTML.p({"style": f"text-align: {style};"}, result)
 
                 # <p>[[<em>TOC</em>]]</p> (represented in Markdown as `[[_TOC_]]`)
                 elif is_placeholder_for(child, "TOC"):

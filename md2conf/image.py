@@ -15,7 +15,7 @@ import lxml.etree as ET
 
 from .attachment import AttachmentCatalog, EmbeddedFileData, ImageData, attachment_name
 from .compatibility import path_relative_to
-from .csf import AC_ELEM, RI_ATTR, RI_ELEM
+from .csf import AC_ELEM, HTML, RI_ATTR, RI_ELEM
 from .formatting import ImageAttributes
 from .png import extract_png_dimensions
 from .svg import fix_svg_get_dimensions, get_svg_dimensions
@@ -125,6 +125,6 @@ class ImageGenerator:
             )
         )
         if attrs.caption:
-            elements.append(AC_ELEM("caption", attrs.caption))
+            elements.append(AC_ELEM("caption", HTML.p(attrs.caption)))
 
         return AC_ELEM("image", attrs.as_dict(max_width=self.options.max_width), *elements)

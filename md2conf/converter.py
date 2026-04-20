@@ -702,7 +702,7 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
             )
         )
         if attrs.caption:
-            elements.append(AC_ELEM("caption", attrs.caption))
+            elements.append(AC_ELEM("caption", HTML.p(attrs.caption)))
 
         return AC_ELEM("image", attrs.as_dict(max_width=self.options.layout.image.max_width), *elements)
 

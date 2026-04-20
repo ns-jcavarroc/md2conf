@@ -1471,6 +1471,8 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
                 ):
                     img = child[0][0]
                     image = self._transform_image(FormattingContext.BLOCK, img)
+                    if image.tag == AC_ATTR("image"):
+                        image.set(AC_ATTR("border"), "true")
                     child[0][0] = image
                     link = self._transform_link(child[0])
                     return link if link is not None else child[0]

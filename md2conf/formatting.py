@@ -13,6 +13,8 @@ from typing import ClassVar
 
 from .csf import AC_ATTR
 
+_PAGE_CONTENT_WIDTH = 760
+
 
 @enum.unique
 class FormattingContext(enum.Enum):
@@ -90,7 +92,7 @@ class ImageAttributes:
                         layout = "align-end"
                     case ImageAlignment.CENTER:
                         align = "center"
-                        layout = "center"
+                        layout = "full-width" if self.width is not None and self.width > _PAGE_CONTENT_WIDTH else "center"
                 attributes[AC_ATTR("align")] = align
                 attributes[AC_ATTR("layout")] = layout
                 attributes[AC_ATTR("local-id")] = str(uuid.uuid4())

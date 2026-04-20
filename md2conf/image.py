@@ -56,9 +56,13 @@ class ImageGenerator:
             if png_file.exists():
                 absolute_path = png_file
 
-        # infer SVG dimensions if not already specified
-        if absolute_path.suffix == ".svg" and attrs.width is None and attrs.height is None:
-            dimensions = get_svg_dimensions(absolute_path)
+        # infer dimensions if not already specified
+        if attrs.width is None and attrs.height is None:
+            dimensions: tuple[int, int] | None = None
+            if absolute_path.suffix == ".svg":
+                dimensions = get_svg_dimensions(absolute_path)
+            elif absolute_path.suffix == ".png":
+                dimensions = extract_png_dimensions(path=absolute_path)
             if dimensions is not None:
                 width, height = dimensions
                 attrs = ImageAttributes(

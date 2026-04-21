@@ -103,6 +103,56 @@ _CONVERTER = markdown.Markdown(
 )
 
 
+# matches a list item marker (unordered: -, *, + or ordered: 1., 2), etc.)
+_LIST_ITEM_REGEXP = re.compile(r"^\s*(?:[-*+]|\d+[.)]) ")
+
+
+def _preprocess_list_separators(content: str) -> str:
+    """
+    Inserts blank lines before list markers when missing.
+
+    Python-Markdown requires a blank line before a list to parse it correctly.
+    Many Markdown editors and previewers are more lenient. This preprocessor
+    ensures lists are recognized even without a preceding blank line.
+    """
+
+    lines = content.split("\n")
+    output: list[str] = []
+    fence_marker: str | None = None
+    in_list_context = False
+
+    for line in lines:
+        if fence_match := _FENCED_CODE_REGEXP.match(line):
+            marker = fence_match.group()
+            if fence_marker is None:
+                fence_marker = marker
+            elif marker == fence_marker:
+                fence_marker = None
+            output.append(line)
+            continue
+
+        if fence_marker is not None:
+            output.append(line)
+            continue
+
+        is_list_item = bool(_LIST_ITEM_REGEXP.match(line))
+
+        if is_list_item:
+            if not in_list_context and output and output[-1] != "":
+                output.append("")
+            in_list_context = True
+        elif line == "":
+            pass
+        elif in_list_context and (line.startswith(" ") or line.startswith("\t")):
+            pass
+        else:
+            in_list_context = False
+
+        output.append(line)
+
+    return "\n".join(output)
+
+
 def markdown_to_html(content: str) -> str:
     """
     Converts a Markdown document into XHTML with Python-Markdown.
@@ -113,7 +163,7 @@ def markdown_to_html(content: str) -> str:
     """
 
     _CONVERTER.reset()
-    html = _CONVERTER.convert(content)
+    html = _CONVERTER.convert(_preprocess_list_separators(content))
     return html
 
 

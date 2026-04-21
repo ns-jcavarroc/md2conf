@@ -274,7 +274,22 @@ The short name notation `:smile:` in a Markdown document is converted into the c
 
 ### Lists and tables
 
-If your Markdown lists or tables don't appear in Confluence as expected, verify that the list or table is delimited by a blank line both before and after, as per strict Markdown syntax. While some previewers accept a more lenient syntax (e.g. an itemized list immediately following a paragraph), *md2conf* uses [Python-Markdown](https://python-markdown.github.io/) internally to convert Markdown into XHTML, which expects the Markdown document to adhere to the stricter syntax.
+*md2conf* automatically inserts a blank line before list markers (`-`, `*`, `+`, `1.`) when one is missing, so lists immediately following a paragraph are rendered correctly. This means both of the following produce the same result:
+
+```markdown
+Both storage buckets serve different purposes:
+- **Source of Truth (SoT)**: Stores files with path-based keys.
+- **Content-Addressable Storage (CAS)**: Stores files by their SHA-256 hash.
+```
+
+```markdown
+Both storage buckets serve different purposes:
+
+- **Source of Truth (SoT)**: Stores files with path-based keys.
+- **Content-Addressable Storage (CAS)**: Stores files by their SHA-256 hash.
+```
+
+If your Markdown tables don't appear in Confluence as expected, verify that the table is delimited by a blank line both before and after, as per strict Markdown syntax.
 
 Likewise, if you have a nested list, make sure that nested items are indented by exactly ***four*** spaces as compared to the parent node:
 

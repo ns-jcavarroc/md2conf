@@ -147,6 +147,16 @@ class ConverterOptions:
         default="png",
         metadata=value_option("Format for rendering Mermaid and draw.io diagrams."),
     )
+    mermaid_icon_packs: list[str] = field(
+        default_factory=lambda: [
+            "@iconify-json/logos",
+            "@iconify-json/simple-icons",
+            "@iconify-json/devicon",
+            "@iconify-json/carbon",
+            "@iconify-json/aws",
+        ],
+        metadata=value_option("Iconify icon packs for Mermaid architecture diagrams (e.g. @iconify-json/logos)."),
+    )
     webui_links: bool = field(
         default=False,
         metadata=boolean_option(

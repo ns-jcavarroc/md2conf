@@ -29,9 +29,11 @@ class ExtensionOptions:
     Customizes how Confluence content is generated for a drawing or diagram.
 
     :param render: Whether to pre-render the drawing or diagram into a PNG/SVG image.
+    :param icon_packs: Iconify icon packs to register with the rendering tool.
     """
 
     render: bool
+    icon_packs: list[str] | None = None
 
 
 class MarketplaceExtension:

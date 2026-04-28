@@ -56,7 +56,7 @@ class MermaidExtension(MarketplaceExtension):
                 content = f.read()
 
             config = self._extract_mermaid_config(content)
-            image_data = render_diagram(content, self.generator.options.output_format, config=config)
+            image_data = render_diagram(content, self.generator.options.output_format, config=config, icon_packs=self.options.icon_packs)
             return self.generator.transform_attached_data(image_data, attrs, relative_path)
         else:
             self.attachments.add_image(ImageData(absolute_path, attrs.alt))
@@ -67,7 +67,7 @@ class MermaidExtension(MarketplaceExtension):
     def transform_fenced(self, content: str) -> ElementType:
         if self.options.render:
             config = self._extract_mermaid_config(content)
-            image_data = render_diagram(content, self.generator.options.output_format, config=config)
+            image_data = render_diagram(content, self.generator.options.output_format, config=config, icon_packs=self.options.icon_packs)
             return self.generator.transform_attached_data(image_data, ImageAttributes.EMPTY_BLOCK)
         else:
             mermaid_data = content.encode("utf-8")

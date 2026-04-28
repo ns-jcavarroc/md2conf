@@ -450,7 +450,7 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
 
         self.extensions = [
             DrawioExtension(self.image_generator, ExtensionOptions(render=self.options.render_drawio)),
-            MermaidExtension(self.image_generator, ExtensionOptions(render=self.options.render_mermaid)),
+            MermaidExtension(self.image_generator, ExtensionOptions(render=self.options.render_mermaid, icon_packs=self.options.mermaid_icon_packs or None)),
             PlantUMLExtension(self.image_generator, ExtensionOptions(render=self.options.render_plantuml)),
         ]
 

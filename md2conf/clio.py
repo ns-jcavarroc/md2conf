@@ -156,6 +156,21 @@ class _OptionTreeVisitor:
                 help=value_text,
             )
 
+        elif origin is list:
+            value_opt = _get_metadata(field, ValueOption)
+            if value_opt is None:
+                return
+            item_types = get_args(field.type)
+            item_type = item_types[0] if item_types else str
+            self.parser.add_argument(
+                self._get_arg_name(arg_name),
+                dest=self._get_field_name(field.name),
+                nargs="*",
+                type=item_type,
+                default=field.default if field.default is not MISSING else (field.default_factory() if field.default_factory is not MISSING else []),
+                help=value_opt.text,
+            )
+
         elif origin is UnionType:
             union_types = list(get_args(field.type))
             if len(union_types) != 2 or NoneType not in union_types:

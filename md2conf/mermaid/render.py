@@ -47,7 +47,12 @@ def has_mmdc() -> bool:
     return shutil.which(executable) is not None
 
 
-def render_diagram(source: str, output_format: Literal["png", "svg"] = "png", config: MermaidConfigProperties | None = None) -> bytes:
+def render_diagram(
+    source: str,
+    output_format: Literal["png", "svg"] = "png",
+    config: MermaidConfigProperties | None = None,
+    icon_packs: list[str] | None = None,
+) -> bytes:
     "Generates a PNG or SVG image from a Mermaid diagram source."
 
     if config is None:
@@ -66,6 +71,9 @@ def render_diagram(source: str, output_format: Literal["png", "svg"] = "png", co
         "--scale",
         str(config.scale or 2),
     ]
+    if icon_packs:
+        cmd.append("--iconPacks")
+        cmd.extend(icon_packs)
     if _is_docker():
         root = os.path.dirname(__file__)
         cmd.extend(["-p", os.path.join(root, "puppeteer-config.json")])

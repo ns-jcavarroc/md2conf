@@ -57,7 +57,10 @@ class MermaidExtension(MarketplaceExtension):
 
             config = self._extract_mermaid_config(content)
             image_data = render_diagram(content, self.generator.options.output_format, config=config, icon_packs=self.options.icon_packs)
-            return self.generator.transform_attached_data(image_data, attrs, relative_path)
+            image = self.generator.transform_attached_data(image_data, attrs, relative_path)
+            if image.tag == AC_ATTR("image"):
+                image.set(AC_ATTR("border"), "true")
+            return image
         else:
             self.attachments.add_image(ImageData(absolute_path, attrs.alt))
             mermaid_filename = attachment_name(relative_path)
@@ -68,7 +71,10 @@ class MermaidExtension(MarketplaceExtension):
         if self.options.render:
             config = self._extract_mermaid_config(content)
             image_data = render_diagram(content, self.generator.options.output_format, config=config, icon_packs=self.options.icon_packs)
-            return self.generator.transform_attached_data(image_data, ImageAttributes.EMPTY_BLOCK)
+            image = self.generator.transform_attached_data(image_data, ImageAttributes.EMPTY_BLOCK)
+            if image.tag == AC_ATTR("image"):
+                image.set(AC_ATTR("border"), "true")
+            return image
         else:
             mermaid_data = content.encode("utf-8")
             mermaid_hash = hashlib.md5(mermaid_data).hexdigest()
